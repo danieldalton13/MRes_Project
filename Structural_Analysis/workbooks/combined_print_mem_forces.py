@@ -16,23 +16,23 @@ class Truss:
     def __init__(self, nodes_, connections_):
         self.nodes = nodes_
         self.connections = connections_
+        N = len(nodes_)
+        self.loads = np.zeros(N*2)
         self.bars = []
-        N = len(nodes_)  # Properly define N based on the number of nodes
-
+        j = 0
         for connection in connections_:
-            for i in range(len(connection)):
-                for j in range(i + 1, len(connection)):
-                    if not checkInMembers(self.bars, [connection[i], connection[j]]):
-                        self.bars.append([connection[i], connection[j]])
+            for i in connection:
+                if not checkInMembers(self.bars, [i, j]):
+                    self.bars.append([i, j])
+            j += 1
 
         nForces = len(self.bars)
-        self.loads = np.zeros(2 * N)  # Initialize loads array
-        self.G = np.zeros((2 * N, nForces))
+        self.G = np.zeros((2*N, nForces))
         self.F = np.zeros(len(self.bars))
 
-        for i in range(2 * N):
-            if i % 2 == 0:  # x-component
-                iNode = i // 2
+        for i in range(2*N):
+            if (i % 2 == 0):  # x-component
+                iNode = int(i/2)
                 for iForce in range(nForces):
                     if iNode in self.bars[iForce]:
                         bar = list(self.bars[iForce])
@@ -40,7 +40,7 @@ class Truss:
                         j = bar[0]
                         self.G[i, iForce] = self.c(iNode, j)
             else:  # y-component
-                iNode = (i - 1) // 2
+                iNode = int((i-1)/2)
                 for iForce in range(nForces):
                     if iNode in self.bars[iForce]:
                         bar = list(self.bars[iForce])
@@ -88,10 +88,9 @@ class Truss:
         print(f"Total Weight: {self.weight:.2f} units")
         print(f"Maximum Force in any member: {self.fmax:.2f} units")
         print(f"Maximum Tension Force in any member: {self.fmax_tension:.2f} units")
-        print("Member Forces (units):")
-        for index, force in enumerate(self.result):
-            force_type = "Tension" if force > 0 else "Compression"
-            print(f"Member {index}: {force:.2f} units ({force_type})")
+        print("Member Forces:")
+        for i, bar in enumerate(self.bars):
+            print(f"Member {bar}: {self.result[i]:.2f} units")
 
 class PgTruss:
     def __init__(self, truss_, screenSize_):
@@ -183,7 +182,6 @@ t1 = Truss(nodes, connections)
 t1.addLoad(0, [0, 25])
 t1.addLoad(4, [0, 25])
 t1.addLoad(12, [0, -50])
-
 
 t1.solve()
 t1.truss_weight()
